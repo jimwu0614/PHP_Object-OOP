@@ -19,14 +19,22 @@ class DB{
             $this->pdo=new PDO($this->dsn,$this->user,$this->pw);
     }
 
+    protected function array_str($array){
+        foreach($array as $key => $value){
+            if($key!='id'){
+                $tmp[]="`$key`='$value'";
+            }
+        }
+
+        return $tmp;
+    }
+
     public function find($id){
         $sql="SELECT * FROM $this->table ";
 
         if(is_array($id)){
-
-            foreach($id as $key => $value){
-                $tmp[]="`$key`='$value'";
-            }
+            
+            $tmp=$this->array_str($id);
 
             $sql = $sql ." WHERE ". join(" AND ",$tmp);
 
@@ -49,9 +57,7 @@ class DB{
 
             if(is_array($arg[0])){
 
-                foreach($arg[0] as $key => $value){
-                    $tmp[]="`$key`='$value'";
-                }
+                $tmp=$this->array_str($arg[0]);
     
                 $sql = $sql ." WHERE ". join(" AND ",$tmp);
             }else{
@@ -67,6 +73,66 @@ class DB{
        // echo $sql;
 
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    function save($array){      
+        if(isset($array['id'])){
+            //update
+            $tmp=$this->array_str($array);
+            $sql="update $this->table set ". join(",",$tmp) ." where `id`='{$array['id']}'";
+        }else{
+            //insert
+            $sql="INSERT into $this->table (`".join("`,`",array_keys($array))."`) values('".join("','",$array)."')";
+        }
+        echo $sql;
+        return $this->pdo->exec($sql);
+    }
+
+    function del($id){
+
+        $sql="DELETE FROM $this->table WHERE ";
+
+        if(is_array($id)){
+
+            $tmp=$this->array_str($id);
+
+            $sql = $sql . join(" AND ",$tmp);
+
+        }else{
+
+            $sql = $sql . " `id` = '$id'";
+
+        }
+        return $this->pdo->exec($sql);
+    }
+
+    function q($sql){
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function math($math,$col,...$arg){
+        $sql="SELECT $math(`$col`) FROM $this->table ";
+              
+        if(!empty($arg[0])){
+
+            if(is_array($arg[0])){
+
+                $tmp=$this->array_str($arg[0]);
+    
+                $sql = $sql ." WHERE ". join(" AND ",$tmp);
+            }else{
+
+                $sql = $sql .$arg[0];
+            }
+
+        }
+
+        if(!empty($arg[1])){
+            $sql = $sql . $arg[1];
+        }
+       // echo $sql;
+
+        return $this->pdo->query($sql)->fetchColumn();
     }
 }
 
@@ -87,11 +153,24 @@ class Room extends DB{
 }
 
 
-$Class=new Room;
+$Dept=new DB('dept');
+
+echo $Dept->math('max','id');
+
+/* $Dept->del(['name'=>'森林維護科']); */
+
+//echo $Dept->insert(['code'=>'701','name'=>'服裝設計科']);
+ //$dept=$Dept->find(['code'=>'404']);
+
+/*$dept['name']='森林維護科';
+dd($dept);
+$Dept->update($dept); */
+
+//$Class=new Room;
 /* $Dept=new DB('dept');
 $ClassStudents=new DB('class_student'); */
-$class=$Class->all();
- dd($class);
+//$class=$Class->all();
+// dd($class);
 //$dept=$Dept->all();
 
 /* $class_studs=$ClassStudents->all(['class_code'=>101]," limit 10");
